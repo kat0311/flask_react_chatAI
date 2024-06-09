@@ -1,6 +1,9 @@
 from flask import request,jsonify
 from config import db,app
 from models import Contact
+from urllib.parse import unquote
+from process import split_text_chunks_and_summary_generator
+
 @app.route("/contacts",methods=["GET"])
 def get_contacts():
     contacts = Contact.query.all()
@@ -48,7 +51,19 @@ def delete_contact(user_id):
     db.session.commit()
     print("contact")
     return jsonify({"message":"Contact deleted"}),200
-
+@app.route("/get_summary",methods = ["POST"])
+def get_summary():
+    encode_url=unquote(unquote(request.args.get('url')))
+    if not encode_url:
+        return jsonify({'error':'URL is required'}), 400
+    summary = split_text_chunks_and_summary_generator(encode_url)
+    print(summary)
+    response= {
+        'submitted_url': encode_url,
+        'summary': summary
+    }
+    return jsonify(response)
+    
     
     
         

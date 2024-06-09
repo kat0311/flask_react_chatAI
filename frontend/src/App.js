@@ -2,7 +2,10 @@ import { useEffect, useState } from 'react';
 import './App.css';
 import ContactList from './ContactList';
 import ContactForm from './ContactForm';
+import Summary from './Summary';
 function App() {
+  
+
   const [contacts, setContact] = useState([]);
   const [isModalOpen, setisModalOpen] = useState(false);
   const [currentContact,setCurrentContact] = useState({})
@@ -32,13 +35,12 @@ function App() {
     closeModal()
     fetchContacts()
   }
-  // const deleteContact = async (id)=>{
-  //   contacts.filter()
-  // }
+
   return (
     <>
       <h1>this is my app</h1>
       <ContactList contacts={contacts} updateContact={openEditModal} updateCallback={onUpdate}/>
+      
         <button onClick={openModal}>Create a Contact</button>
         {isModalOpen && <div className='modal'>
           <div className='modal-content'>
@@ -46,6 +48,7 @@ function App() {
             <ContactForm existingContact={currentContact} updateCallback={onUpdate}></ContactForm>
           </div>
         </div>}
+        <Summary></Summary>
     
 
     </>
