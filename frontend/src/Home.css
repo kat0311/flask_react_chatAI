@@ -1,0 +1,23 @@
+.Home {
+    text-align: center;
+  }
+  
+  .options {
+    margin-top: 20px;
+  }
+  
+  .option {
+    display: block;
+    margin: 10px 0;
+    padding: 10px;
+    background-color: #61dafb;
+    color: white;
+    text-decoration: none;
+    font-size: 1.2em;
+    border-radius: 5px;
+  }
+  
+  .option:hover {
+    background-color: #21a1f1;
+  }
+  

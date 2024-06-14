@@ -1,9 +1,19 @@
-from flask import request,jsonify
+from flask import request,jsonify,session
 from config import db,app
 from models import Contact
 from urllib.parse import unquote
 from process import split_text_chunks_and_summary_generator
-
+# from langchain.schema import AIMessage, SystemMessage
+from langchain_core.messages import HumanMessage,AIMessage,SystemMessage
+from langchain_openai import AzureChatOpenAI
+from langchain.chains import ConversationChain
+from langchain.chains.conversation.memory import ConversationSummaryMemory
+import os
+import json
+from dotenv import load_dotenv
+os.environ["AZURE_OPENAI_API_KEY"] = os.getenv("AZURE_OPENAI_API_KEY")
+os.environ["AZURE_OPENAI_ENDPOINT"] = os.getenv("AZURE_OPENAI_ENDPOINT")
+app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
 @app.route("/contacts",methods=["GET"])
 def get_contacts():
     contacts = Contact.query.all()
@@ -63,7 +73,75 @@ def get_summary():
         'summary': summary
     }
     return jsonify(response)
+llm = AzureChatOpenAI(openai_api_version="2023-05-15", 
+                      azure_deployment="gpt-4",temperature=0)
+
+def message_to_dict(message):
+    return {
+        "type": type(message).__name__,
+        "content": message.content
+    }
+
+def dict_to_message(d):
+    if d['type'] == 'SystemMessage':
+        return SystemMessage(content=d['content'])
+    elif d['type'] == 'HumanMessage':
+        return HumanMessage(content=d['content'])
+    elif d['type'] == 'AIMessage':
+        return AIMessage(content=d['content'])
+
+@app.route('/chat', methods=['POST'])
+def chat_with_gpt():
+    data = request.json
+    question = data.get('question', '')
+    system_message_content = data.get('system_message', 'You are a helpful assistant.')
+    if 'sessionMessages' not in session:
+        session['sessionMessages'] = [
+            message_to_dict(SystemMessage(content=system_message_content))
+        ]
+
+    session['sessionMessages'].append(message_to_dict(HumanMessage(content=question)))
+
+    messages = [dict_to_message(m) for m in session['sessionMessages']]
+    assistant_answer = llm.invoke(messages)
+    print(chat.get_prompts)
     
+    session['sessionMessages'].append(message_to_dict(AIMessage(content=assistant_answer.content)))
+
+    return jsonify({"answer": assistant_answer.content})
+conversation = None
+chat_history = []
+
+@app.route('/api/summarize', methods=['POST'])
+def summarize():
+    global conversation
+
+    if conversation:
+        summary = "Nice chatting with you my friend ❤️:\n\n" + conversation.memory.buffer
+        return jsonify({"summary": summary}), 200
+    return jsonify({"error": "No conversation to summarize"}), 400
+
+@app.route('/api/chat', methods=['POST'])
+def chat():
+    global conversation
+
+    data = request.json
+    user_input = data.get('user_input')
+    
+
+    if conversation is None:
+        
+        conversation = ConversationChain(
+            llm=llm,
+            verbose=True,
+            memory=ConversationSummaryMemory(llm=llm)
+        )
+
+    response = conversation.predict(input=user_input)
+    chat_history.append({"role": "user", "content": user_input})
+    chat_history.append({"role": "assistant", "content": response})
+
+    return jsonify({"response": response, "chat_history": chat_history}), 200
     
     
         

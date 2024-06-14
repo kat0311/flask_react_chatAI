@@ -23,6 +23,7 @@ const Summary=()=>{
         onChange={e => setUrl(e.target.value)}
         placeholder="Enter URL"
     />
+    
     <button onClick={handleSubmit}>Get Summary</button>
     {summary && (
         <div>
